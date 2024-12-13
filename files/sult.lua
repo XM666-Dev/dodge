@@ -436,6 +436,7 @@ function VariableAccessor(tag, field, default)
         local component = rawget(t, self)
         if component == nil then
             local entity = t.id
+            if t.id == 0 then return end
             component = EntityGetFirstComponent(entity, "VariableStorageComponent", tag) or EntityAddComponent2(entity, "VariableStorageComponent", { _tags = tag, [field] = default })
             rawset(t, self, component)
         end
@@ -445,6 +446,7 @@ function VariableAccessor(tag, field, default)
         local component = rawget(t, self)
         if component == nil then
             local entity = t.id
+            if t.id == 0 then return end
             component = EntityGetFirstComponent(entity, "VariableStorageComponent", tag) or EntityAddComponent2(entity, "VariableStorageComponent", { _tags = tag, [field] = default })
             rawset(t, self, component)
         end
