@@ -7,11 +7,12 @@ local Player = setmetatable(Class {
     character_data = ComponentAccessor(EntityGetFirstComponent, "CharacterDataComponent"),
     shooter = ComponentAccessor(EntityGetFirstComponent, "PlatformShooterPlayerComponent"),
     damage_model = ComponentAccessor(EntityGetFirstComponent, "DamageModelComponent"),
+    sprite = ComponentAccessor(EntityGetFirstComponent, "SpriteComponent", "character"),
     dodging = VariableAccessor("dodge.dodging", "value_bool"),
     is_jumping = ConstantAccessor(function(self)
         return self.character_platforming ~= nil and self.character_platforming.mIsPrecisionJumping
     end),
-}, { __call = function(t, ...) return setmetatable({ id = ... or 0 }, t) end })
+}, { __call = function(t, ...) return setmetatable({ id = ... }, t) end })
 
 local input_duration = 10
 local pre_dodge_duration = 1
@@ -58,8 +59,16 @@ function OnWorldPreUpdate()
     if player_object:is_jumping() then
         if player_object.dodging then
             player_object.character_platforming.mPrecisionJumpingSpeedX = player_object.character_platforming.mPrecisionJumpingSpeedX * 0.9375
+
             if player_object.damage_model ~= nil then
                 player_object.damage_model.mFireFramesLeft = math.max(player_object.damage_model.mFireFramesLeft - 2, 0)
+            end
+            if player_object.sprite ~= nil then
+                EntityRefreshSprite(player_object.id, player_object.sprite._id)
+            end
+
+            if player_object.shooter ~= nil then
+                player_object.shooter.mFastMovementParticlesAlphaSmoothed = player_object.shooter.mFastMovementParticlesAlphaSmoothed - 0.5 / dodge_duration + 0.2
             end
         end
     else
@@ -68,17 +77,15 @@ function OnWorldPreUpdate()
             if player_object.character_platforming ~= nil then
                 player_object.character_platforming.pixel_gravity = 350
             end
+
             EntityAddTag(player, "hittable")
             if player_object.damage_model ~= nil then
                 player_object.damage_model.materials_damage = true
+                player_object.damage_model.fire_probability_of_ignition = 1
             end
-            local effect_entity = get_children(player, "dodge.stainless")[1]
-            EntityKill(effect_entity)
-            player_object.character_platforming.swim_idle_buoyancy_coeff = 1.2
-            player_object.character_platforming.swim_up_buoyancy_coeff = 0.9
-            player_object.character_platforming.swim_down_buoyancy_coeff = 0.7
-            player_object.character_platforming.swim_drag = 0.95
-            player_object.character_platforming.swim_extra_horizontal_drag = 0.9
+            if player_object.character_data ~= nil then
+                player_object.character_data.buoyancy_check_offset_y = -7
+            end
         end
         if frame == dodge_frame then
             local x
@@ -139,22 +146,21 @@ function OnWorldPreUpdate()
                 if player_object.character_data ~= nil then
                     player_object.character_data.mVelocity = velocity
                 end
-                if player_object.shooter ~= nil then
-                    player_object.shooter.mFastMovementParticlesAlphaSmoothed = 1
-                end
+
                 EntityRemoveTag(player, "hittable")
                 if player_object.damage_model ~= nil then
                     player_object.damage_model.materials_damage = false
+                    player_object.damage_model.fire_probability_of_ignition = 0
                 end
-                local effect, effect_entity = GetGameEffectLoadTo(player, "STAINS_DROP_FASTER", true)
-                EntityAddTag(effect_entity, "dodge.stainless")
-                player_object.character_platforming.swim_idle_buoyancy_coeff = math.min(math.max(player_object.character_platforming.swim_idle_buoyancy_coeff * 0.6, 0.0), 2.0)
-                player_object.character_platforming.swim_up_buoyancy_coeff = math.min(math.max(player_object.character_platforming.swim_up_buoyancy_coeff * 0.2, 0.0), 2.0)
-                player_object.character_platforming.swim_down_buoyancy_coeff = math.min(math.max(player_object.character_platforming.swim_down_buoyancy_coeff * 0.2, 0.0), 2.0)
-                player_object.character_platforming.swim_drag = math.min(math.max(player_object.character_platforming.swim_drag * 1.2, 0.0), 1.01)
-                player_object.character_platforming.swim_extra_horizontal_drag = math.min(math.max(player_object.character_platforming.swim_extra_horizontal_drag * 1.2, 0.0), 1.01)
+                if player_object.character_data ~= nil then
+                    player_object.character_data.buoyancy_check_offset_y = 0x7fff
+                end
+
+                if player_object.shooter ~= nil then
+                    player_object.shooter.mFastMovementParticlesAlphaSmoothed = 0.5 + 0.2
+                end
                 local player_x, player_y = EntityGetTransform(player)
-                --GamePlaySound("data/audio/Desktop/player.bank", "player/air_whoosh",player_x,player_y)
+                GamePlaySound("data/audio/Desktop/player.bank", "player/kick", player_x, player_y)
             end
         end
     end
