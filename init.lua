@@ -1,5 +1,5 @@
 dofile_once("mods/dodge/files/sult.lua")
-dofile_once("data/scripts/debug/keycodes.lua")
+dofile_once("mods/dodge/files/input_interface.lua")
 
 local Player = setmetatable(Class {
     controls = ComponentAccessor(EntityGetFirstComponent, "ControlsComponent"),
@@ -34,7 +34,16 @@ function OnWorldPreUpdate()
     local player_object = Player(player)
 
     local frame = GameGetFrameNum()
-    if player_object.controls ~= nil and player_object.controls.mButtonFrameRightClick == frame then
+    local button
+    local input = ModSettingGet("dodge.key")
+    if input == "Mouse_left" and player_object.controls ~= nil then
+        button = player_object.controls.mButtonFrameLeftClick == frame
+    elseif input == "Mouse_right" and player_object.controls ~= nil then
+        button = player_object.controls.mButtonFrameRightClick == frame
+    else
+        button = read_input_just(input)
+    end
+    if button then
         button_frame = frame + input_duration
     end
     if frame < button_frame and frame > consume_frame and frame > dodge_frame and not player_object:is_jumping() then
