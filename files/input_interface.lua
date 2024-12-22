@@ -1,1 +1,0 @@
-d:/Program Files (x86)/Steam/steamapps/common/Noita/mods/sul/input_interface.lua

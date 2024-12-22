@@ -1,5 +1,5 @@
-dofile_once("mods/dodge/files/sult.lua")
-dofile_once("mods/dodge/files/input_interface.lua")
+dofile_once("mods/dodge/files/tactic.lua")
+dofile_once("mods/dodge/files/input.lua")
 
 local Player = setmetatable(Class {
     controls = ComponentAccessor(EntityGetFirstComponent, "ControlsComponent"),
