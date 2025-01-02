@@ -127,7 +127,7 @@ local punctuations = {
 ---@return string?
 function get_input_text(input)
     if input:find("^Mouse_") then
-        return GameTextGet("$input_" .. input:gsub("_", ""):lower())
+        return GameTextGet("$input_" .. input:gsub("_", ""):lower()):upper()
     elseif input:find("^Key_") then
         local text = input:sub(5)
         local prefix = ""

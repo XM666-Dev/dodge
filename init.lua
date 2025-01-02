@@ -7,7 +7,8 @@ local Player = setmetatable(Class {
     character_data = ComponentAccessor(EntityGetFirstComponent, "CharacterDataComponent"),
     shooter = ComponentAccessor(EntityGetFirstComponent, "PlatformShooterPlayerComponent"),
     damage_model = ComponentAccessor(EntityGetFirstComponent, "DamageModelComponent"),
-    sprite = ComponentAccessor(EntityGetFirstComponent, "SpriteComponent", "character"),
+    stains = ComponentAccessor(EntityGetFirstComponent, "SpriteStainsComponent"),
+    stainless_sprite = ComponentValidAccessor("SpriteComponent", { _tags = "dodge.stainless", offset_x = math.huge }),
     dodging = VariableAccessor("dodge.dodging", "value_bool"),
     is_jumping = ConstantAccessor(function(self)
         return self.character_platforming ~= nil and self.character_platforming.mIsPrecisionJumping
@@ -35,7 +36,7 @@ function OnWorldPreUpdate()
 
     local frame = GameGetFrameNum()
     local button
-    local input = ModSettingGet("dodge.key")
+    local input = tostring(ModSettingGet("dodge.key"))
     if input == "Mouse_left" and player_object.controls ~= nil then
         button = player_object.controls.mButtonFrameLeftClick == frame
     elseif input == "Mouse_right" and player_object.controls ~= nil then
@@ -66,14 +67,12 @@ function OnWorldPreUpdate()
         end
     end
     if player_object:is_jumping() then
-        if player_object.dodging then
+        local internal = ModTextFileGetContent("mods/fpspp/files/internal.txt") ~= "false"
+        if player_object.dodging and internal then
             player_object.character_platforming.mPrecisionJumpingSpeedX = player_object.character_platforming.mPrecisionJumpingSpeedX * 0.9375
 
             if player_object.damage_model ~= nil then
-                player_object.damage_model.mFireFramesLeft = math.max(player_object.damage_model.mFireFramesLeft - 2, 0)
-            end
-            if player_object.sprite ~= nil then
-                EntityRefreshSprite(player_object.id, player_object.sprite._id)
+                player_object.damage_model.mFireFramesLeft = math.max(player_object.damage_model.mFireFramesLeft - 5, 0)
             end
 
             if player_object.shooter ~= nil then
@@ -92,6 +91,7 @@ function OnWorldPreUpdate()
                 player_object.damage_model.materials_damage = true
                 player_object.damage_model.fire_probability_of_ignition = 1
             end
+            player_object.stains.sprite_id = 0
             if player_object.character_data ~= nil then
                 player_object.character_data.buoyancy_check_offset_y = -7
             end
@@ -160,6 +160,13 @@ function OnWorldPreUpdate()
                 if player_object.damage_model ~= nil then
                     player_object.damage_model.materials_damage = false
                     player_object.damage_model.fire_probability_of_ignition = 0
+                end
+                local stainless_sprite = player_object.stainless_sprite._id
+                for i, sprite in ipairs(EntityGetComponentIncludingDisabled(player, "SpriteComponent") or {}) do
+                    if sprite == stainless_sprite then
+                        player_object.stains.sprite_id = i - 1
+                        break
+                    end
                 end
                 if player_object.character_data ~= nil then
                     player_object.character_data.buoyancy_check_offset_y = 0x7fff
