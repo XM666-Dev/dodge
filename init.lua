@@ -1,6 +1,7 @@
 dofile_once("mods/dodge/files/tactic.lua")
 dofile_once("mods/dodge/files/input.lua")
 
+ModImageMakeEditable("mods/dodge/files/empty.png", 1, 1)
 local Player = setmetatable(Class {
     controls = ComponentAccessor(EntityGetFirstComponent, "ControlsComponent"),
     character_platforming = ComponentAccessor(EntityGetFirstComponent, "CharacterPlatformingComponent"),
@@ -8,7 +9,7 @@ local Player = setmetatable(Class {
     shooter = ComponentAccessor(EntityGetFirstComponent, "PlatformShooterPlayerComponent"),
     damage_model = ComponentAccessor(EntityGetFirstComponent, "DamageModelComponent"),
     stains = ComponentAccessor(EntityGetFirstComponent, "SpriteStainsComponent"),
-    stainless_sprite = ComponentValidAccessor("SpriteComponent", { _tags = "dodge.stainless", offset_x = math.huge }),
+    stainless_sprite = ComponentValidAccessor("SpriteComponent", { _tags = "dodge.stainless", image_file = "mods/dodge/files/empty.png" }),
     dodging = VariableAccessor("dodge.dodging", "value_bool"),
     is_jumping = ConstantAccessor(function(self)
         return self.character_platforming ~= nil and self.character_platforming.mIsPrecisionJumping
@@ -161,9 +162,9 @@ function OnWorldPreUpdate()
                     player_object.damage_model.materials_damage = false
                     player_object.damage_model.fire_probability_of_ignition = 0
                 end
-                local stainless_sprite = player_object.stainless_sprite._id
+                player_object.stainless_sprite.transform_offset = { 0xffffffff, 0xffffffff }
                 for i, sprite in ipairs(EntityGetComponentIncludingDisabled(player, "SpriteComponent") or {}) do
-                    if sprite == stainless_sprite then
+                    if sprite == player_object.stainless_sprite._id then
                         player_object.stains.sprite_id = i - 1
                         break
                     end
