@@ -162,7 +162,7 @@ function OnWorldPreUpdate()
                     player_object.damage_model.materials_damage = false
                     player_object.damage_model.fire_probability_of_ignition = 0
                 end
-                player_object.stainless_sprite.transform_offset = { 0xffffffff, 0xffffffff }
+                player_object.stainless_sprite.transform_offset = { math.huge, math.huge }
                 for i, sprite in ipairs(EntityGetComponentIncludingDisabled(player, "SpriteComponent") or {}) do
                     if sprite == player_object.stainless_sprite._id then
                         player_object.stains.sprite_id = i - 1
