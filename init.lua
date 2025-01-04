@@ -2,6 +2,19 @@ dofile_once("mods/dodge/files/tactic.lua")
 dofile_once("mods/dodge/files/input.lua")
 
 ModImageMakeEditable("mods/dodge/files/empty.png", 1, 1)
+
+---@class Player
+---@field id number
+---@field controls ControlsComponent?
+---@field character_platforming CharacterPlatformingComponent?
+---@field character_data CharacterDataComponent?
+---@field shooter PlatformShooterPlayerComponent?
+---@field damage_model DamageModelComponent?
+---@field stains SpriteStainsComponent?
+---@field stainless_sprite SpriteComponent?
+---@field dodging boolean
+---@field is_jumping fun():boolean
+---@type fun(id):Player
 local Player = setmetatable(Class {
     controls = ComponentAccessor(EntityGetFirstComponent, "ControlsComponent"),
     character_platforming = ComponentAccessor(EntityGetFirstComponent, "CharacterPlatformingComponent"),
@@ -67,25 +80,9 @@ function OnWorldPreUpdate()
             last_frame_down = frame
         end
     end
-    if player_object:is_jumping() then
-        local internal = ModTextFileGetContent("mods/fpspp/files/internal.txt") ~= "false"
-        if player_object.dodging and internal then
-            player_object.character_platforming.mPrecisionJumpingSpeedX = player_object.character_platforming.mPrecisionJumpingSpeedX * 0.9375
-
-            if player_object.damage_model ~= nil then
-                player_object.damage_model.mFireFramesLeft = math.max(player_object.damage_model.mFireFramesLeft - 5, 0)
-            end
-
-            if player_object.shooter ~= nil then
-                player_object.shooter.mFastMovementParticlesAlphaSmoothed = player_object.shooter.mFastMovementParticlesAlphaSmoothed - 0.5 / dodge_duration + 0.2
-            end
-        end
-    else
+    if not player_object:is_jumping() then
         if player_object.dodging then
             player_object.dodging = false
-            if player_object.character_platforming ~= nil then
-                player_object.character_platforming.pixel_gravity = 350
-            end
 
             EntityAddTag(player, "hittable")
             if player_object.damage_model ~= nil then
@@ -134,27 +131,15 @@ function OnWorldPreUpdate()
                 player_object.dodging = true
                 x, y = vec_normalize(x, y)
                 x, y = vec_scale(x, y, x_speed, y_speed)
-                local velocity = {}
-                if player_object.character_data ~= nil then
-                    velocity[1] = player_object.character_data.mVelocity[1] + x
-                else
-                    velocity[1] = 0
-                end
-                velocity[2] = y
                 if player_object.character_platforming ~= nil then
-                    if y == 0 then
-                        player_object.character_platforming.pixel_gravity = 175
-                    elseif y > 0 then
-                        player_object.character_platforming.pixel_gravity = 0
+                    player_object.character_platforming.mPrecisionJumpingTimeLeft = dodge_duration
+                    if player_object.character_data ~= nil then
+                        player_object.character_platforming.mPrecisionJumpingSpeedX = player_object.character_data.mVelocity[1] + x
                     end
-                end
-                if player_object.character_platforming ~= nil then
-                    player_object.character_platforming.precision_jumping_max_duration_frames = dodge_duration
-                    player_object.character_platforming.mPrecisionJumpingSpeedX = velocity[1]
                     player_object.character_platforming.mIsPrecisionJumping = true
                 end
                 if player_object.character_data ~= nil then
-                    player_object.character_data.mVelocity = velocity
+                    player_object.character_data.mVelocity[2] = y
                 end
 
                 EntityRemoveTag(player, "hittable")
@@ -170,15 +155,32 @@ function OnWorldPreUpdate()
                     end
                 end
                 if player_object.character_data ~= nil then
-                    player_object.character_data.buoyancy_check_offset_y = 0x7fff
+                    player_object.character_data.buoyancy_check_offset_y = 0x1FFFF
                 end
 
                 if player_object.shooter ~= nil then
-                    player_object.shooter.mFastMovementParticlesAlphaSmoothed = 0.5 + 0.2
+                    player_object.shooter.mFastMovementParticlesAlphaSmoothed = 0.5 + tonumber(MagicNumbersGetValue("PLAYER_FAST_MOVEMENT_PARTICLES_ALPHA_CHANGE_SPD"))
                 end
                 local player_x, player_y = EntityGetTransform(player)
                 GamePlaySound("data/audio/Desktop/player.bank", "player/kick", player_x, player_y)
             end
+        end
+    end
+    if player_object.dodging and ModTextFileGetContent("mods/fpspp/files/internal.txt") ~= "false" then
+        if frame > dodge_frame then
+            player_object.character_platforming.mPrecisionJumpingSpeedX = player_object.character_platforming.mPrecisionJumpingSpeedX * 0.9375
+        end
+        if player_object.character_data ~= nil and player_object.character_platforming ~= nil and last_frame_up < input_frame and last_frame_down < input_frame then
+            player_object.character_data.mVelocity[2] = player_object.character_data.mVelocity[2] - player_object.character_platforming.pixel_gravity * 0.5 / 60
+        end
+        player_object.controls.mJumpVelocity = { 0, 0 }
+
+        if player_object.damage_model ~= nil then
+            player_object.damage_model.mFireFramesLeft = math.max(player_object.damage_model.mFireFramesLeft - 5, 0)
+        end
+
+        if frame > dodge_frame and player_object.shooter ~= nil then
+            player_object.shooter.mFastMovementParticlesAlphaSmoothed = player_object.shooter.mFastMovementParticlesAlphaSmoothed - 0.5 / dodge_duration + tonumber(MagicNumbersGetValue("PLAYER_FAST_MOVEMENT_PARTICLES_ALPHA_CHANGE_SPD"))
         end
     end
 end
