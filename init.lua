@@ -5,16 +5,16 @@ ModImageMakeEditable("mods/dodge/files/empty.png", 1, 1)
 
 ---@class Player
 ---@field id number
----@field controls ControlsComponent?
----@field character_platforming CharacterPlatformingComponent?
----@field character_data CharacterDataComponent?
----@field shooter PlatformShooterPlayerComponent?
----@field damage_model DamageModelComponent?
----@field stains SpriteStainsComponent?
----@field stainless_sprite SpriteComponent?
+---@field controls table?
+---@field character_platforming table?
+---@field character_data table?
+---@field shooter table?
+---@field damage_model table?
+---@field stains table?
+---@field stainless_sprite table?
 ---@field dodging boolean
 ---@field is_jumping fun():boolean
----@type fun(id):Player
+---@type table|fun(id):Player
 local Player = setmetatable(Class {
     controls = ComponentAccessor(EntityGetFirstComponent, "ControlsComponent"),
     character_platforming = ComponentAccessor(EntityGetFirstComponent, "CharacterPlatformingComponent"),
@@ -56,7 +56,7 @@ function OnWorldPreUpdate()
     elseif input == "Mouse_right" and player_object.controls ~= nil then
         button = player_object.controls.mButtonFrameRightClick == frame
     else
-        button = read_input_just(input)
+        button = read_input_down(input)
     end
     if button then
         button_frame = frame + input_duration
@@ -89,7 +89,9 @@ function OnWorldPreUpdate()
                 player_object.damage_model.materials_damage = true
                 player_object.damage_model.fire_probability_of_ignition = 1
             end
-            player_object.stains.sprite_id = 0
+            if player_object.stains ~= nil then
+                player_object.stains.sprite_id = 0
+            end
             if player_object.character_data ~= nil then
                 player_object.character_data.buoyancy_check_offset_y = -7
             end
@@ -149,7 +151,7 @@ function OnWorldPreUpdate()
                 end
                 player_object.stainless_sprite.transform_offset = { math.huge, math.huge }
                 for i, sprite in ipairs(EntityGetComponentIncludingDisabled(player, "SpriteComponent") or {}) do
-                    if sprite == player_object.stainless_sprite._id then
+                    if sprite == player_object.stainless_sprite._id and player_object.stains ~= nil then
                         player_object.stains.sprite_id = i - 1
                         break
                     end
