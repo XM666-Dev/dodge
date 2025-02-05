@@ -40,6 +40,7 @@ local last_frame_down = 0
 local dodges = 0
 local collided_horizontally_first = false
 local collided_horizontally_second = false
+local gravity_scale
 function OnWorldPreUpdate()
     local player = EntityGetWithTag("player_unit")[1]
     if player == nil then return end
@@ -72,7 +73,7 @@ function OnWorldPreUpdate()
     end
     local collided_horizontally_third = player_object.character_data ~= nil and player_object.character_data.mCollidedHorizontally
     if collided_horizontally_second and player_object.character_platforming and not player_object.character_platforming.mIsPrecisionJumping and player_object.dodging then
-        dodges = math.max(dodges - 1, 0)
+        dodges = dodges - 1
     end
     if (collided_horizontally_first or collided_horizontally_second or collided_horizontally_third) and read_input(input) then
         local y = player_object.character_data and player_object.character_data.mVelocity[2] or 0
@@ -135,6 +136,12 @@ function OnWorldPreUpdate()
             end
             if x ~= 0 or y ~= 0 then
                 player_object.dodging = true
+                gravity_scale = 0
+                if y == 0 then
+                    gravity_scale = -0x1.1111111111111000p-7
+                elseif y > 0 and x ~= 0 then
+                    gravity_scale = -0x1.1111111111111000p-6
+                end
                 x, y = vec_normalize(x, y)
                 x, y = vec_scale(x, y, x_speed, y_speed)
                 player_object.character_platforming_.mIsPrecisionJumping = true
@@ -183,9 +190,7 @@ function OnWorldPreUpdate()
         if frame > ready_frame then
             player_object.character_platforming_.mPrecisionJumpingSpeedX = player_object.character_platforming and player_object.character_platforming.mPrecisionJumpingSpeedX * 0.9375
         end
-        if last_frame_up < input_frame and (last_frame_down < input_frame or last_frame_left >= input_frame or last_frame_right >= input_frame) then
-            player_object.character_data_.mVelocity[2] = player_object.character_data and player_object.character_platforming and player_object.character_data.mVelocity[2] - player_object.character_platforming.pixel_gravity * (last_frame_down < input_frame and 0.5 or 1) / 60
-        end
+        player_object.character_data_.mVelocity[2] = player_object.character_data and player_object.character_platforming and player_object.character_data.mVelocity[2] + player_object.character_platforming.pixel_gravity * gravity_scale
         player_object.controls_.mJumpVelocity = {0, 0}
 
         player_object.damage_model_.mFireFramesLeft = player_object.damage_model and math.max(player_object.damage_model.mFireFramesLeft - 7, 0)
