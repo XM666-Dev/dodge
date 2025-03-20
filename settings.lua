@@ -124,6 +124,13 @@ mod_settings =
         scope = MOD_SETTING_SCOPE_RUNTIME,
         ui_fn = mod_setting_text_number,
     },
+    {
+        id = "jump_only",
+        ui_name = "Jump only",
+        ui_description = "Disable flying and only allow jumping.",
+        value_default = false,
+        scope = MOD_SETTING_SCOPE_RUNTIME,
+    },
 }
 
 function ModSettingsUpdate(init_scope)
